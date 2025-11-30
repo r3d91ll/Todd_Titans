@@ -2,7 +2,7 @@
 
 > **⚠️ Development Status: Archived**
 >
-> This repository is no longer under active development. Further work on memory-augmented architectures has moved to [**Todd_Atlas**](https://github.com/r3d91ll/Todd_Atlas), which explores continuous memory systems that avoid dimensional compression between components.
+> This repository is no longer under active development. Further work on memory-augmented architectures has moved to [**Todd_Atlas**](https://github.com/r3d91ll/Todd_Atlas).
 >
 > This implementation remains available as a reference for the Titans paper.
 
