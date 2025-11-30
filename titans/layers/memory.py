@@ -283,14 +283,17 @@ class NeuralMemory(nn.Module):
         loss = F.mse_loss(predicted, values, reduction="none").sum(dim=-1)
 
         # Compute gradients w.r.t. memory parameters
+        # Only retain_graph for all but the last parameter to avoid memory leak
         gradients = {}
-        for name, param in self.memory.named_parameters():
+        param_names = [name for name, p in self.memory.named_parameters() if p.requires_grad]
+        for i, (name, param) in enumerate(self.memory.named_parameters()):
             if param.requires_grad:
+                is_last = (i == len(param_names) - 1)
                 grad = torch.autograd.grad(
                     loss.sum(),
                     param,
                     create_graph=self.training,
-                    retain_graph=True,
+                    retain_graph=not is_last,
                 )[0]
                 gradients[name] = grad
 
@@ -379,8 +382,12 @@ class NeuralMemory(nn.Module):
 
             # Query memory with current query
             # Temporarily load weights
+            # NOTE: Averaging across batch is a simplification that loses per-sample
+            # memory state. For batch_size > 1, each sample shares the same memory
+            # weights during query. This is acceptable for training but may need
+            # per-sample tracking for inference with diverse samples.
             for name, param in self.memory.named_parameters():
-                param.data = current_weights[name].mean(dim=0)  # Average across batch
+                param.data = current_weights[name].mean(dim=0)
 
             memory_output = self.memory(q_t)  # (batch, d_value)
 

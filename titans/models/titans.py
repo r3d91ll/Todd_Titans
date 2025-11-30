@@ -163,7 +163,13 @@ class TitansBlockMAC(nn.Module):
             # 2. Run attention with memory context
             # Concatenate memory context with chunk for attention
             attn_input = chunk + memory_context  # Residual addition
-            attn_output = self.attention(self.norm2(attn_input))
+            # Extract chunk-specific attention mask if provided
+            chunk_mask = None
+            if attention_mask is not None:
+                start_idx = c * self.chunk_size
+                end_idx = min(start_idx + self.chunk_size, orig_len)
+                chunk_mask = attention_mask[:, start_idx:end_idx]
+            attn_output = self.attention(self.norm2(attn_input), attention_mask=chunk_mask)
 
             # 3. Combine via gating
             combined = self.gate(attn_output, memory_context)

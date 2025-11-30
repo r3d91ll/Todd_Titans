@@ -75,12 +75,24 @@ class RotaryEmbedding(nn.Module):
         k: torch.Tensor,
         seq_len: int
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Apply rotary embeddings to query and key."""
+        """
+        Apply rotary embeddings to query and key.
+
+        Args:
+            q: (batch, num_heads, seq_len, d_head) query tensor
+            k: (batch, num_heads, seq_len, d_head) key tensor
+            seq_len: sequence length
+
+        Returns:
+            Tuple of rotary-embedded (q, k) tensors
+        """
         if seq_len > self.max_seq_len:
             self._build_cache(seq_len)
+            self.max_seq_len = seq_len
 
-        cos = self.cos_cached[:seq_len]
-        sin = self.sin_cached[:seq_len]
+        # Get cos/sin and reshape for broadcasting: (seq_len, dim) -> (1, 1, seq_len, dim)
+        cos = self.cos_cached[:seq_len].unsqueeze(0).unsqueeze(0)
+        sin = self.sin_cached[:seq_len].unsqueeze(0).unsqueeze(0)
 
         q_embed = (q * cos) + (self._rotate_half(q) * sin)
         k_embed = (k * cos) + (self._rotate_half(k) * sin)
@@ -217,12 +229,12 @@ def _parallel_scan_impl(
         b[:, indices] = b[:, indices] + a[:, indices] * b_prev
         a[:, indices] = a[:, indices] * a_prev
 
-    # Incorporate initial state
-    b[:, -1] = b[:, -1] + a[:, -1] * initial_state
+    # Incorporate initial state into the final accumulated value
+    final_b = b[:, -1] + a[:, -1] * initial_state
 
-    # Down-sweep phase
+    # Down-sweep phase - distribute the accumulated values
+    # Store the final result to use after down-sweep
     a[:, -1] = 1.0
-    temp_b = b[:, -1].clone()
     b[:, -1] = initial_state
 
     for d in range(log_n - 1, -1, -1):
@@ -240,7 +252,11 @@ def _parallel_scan_impl(
         a[:, indices] = temp_a * a[:, indices]
 
     # Apply the recurrence to get final outputs
+    # b now contains the prefix products, apply the recurrence h_t = g_t * h_{t-1} + v_t
     outputs = gates * b + values
+
+    # The last position should use the accumulated final_b
+    outputs[:, -1] = final_b
 
     return outputs[:, :seq_len]
 

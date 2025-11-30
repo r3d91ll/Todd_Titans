@@ -156,22 +156,20 @@ class SlidingWindowAttention(nn.Module):
         attention_mask: Optional[Tensor],
     ) -> Tensor:
         """Standard sliding window attention implementation."""
-        batch, num_heads, q_len, d_head = q.shape
+        _, _, q_len, _ = q.shape
         kv_len = k.shape[2]
 
         # Compute attention scores
         scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
-        # Create sliding window mask
-        window_mask = create_sliding_window_mask(
-            q_len, self.window_size, q.device
-        )
-
-        # Also apply causal mask
-        causal_mask = create_causal_mask(q_len, q.device)
-
-        # Combine masks
-        combined_mask = window_mask | causal_mask
+        # Create masks with correct dimensions for kv_len (handles KV cache case)
+        # For each query position i, allow attending to positions max(0, i - window_size + 1) to i
+        q_pos = torch.arange(q_len, device=q.device).unsqueeze(1)
+        kv_pos = torch.arange(kv_len, device=q.device).unsqueeze(0)
+        # Offset for cached positions (when kv_len > q_len)
+        offset = kv_len - q_len
+        # Causal + sliding window mask: mask future positions and positions outside window
+        combined_mask = (kv_pos > q_pos + offset) | (kv_pos < q_pos + offset - self.window_size + 1)
         scores = scores.masked_fill(combined_mask.unsqueeze(0).unsqueeze(0), float("-inf"))
 
         # Apply additional attention mask if provided
