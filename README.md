@@ -1,5 +1,11 @@
 # Todd_Titans
 
+> **⚠️ Development Status: Archived**
+>
+> This repository is no longer under active development. Further work on memory-augmented architectures has moved to [**Todd_Atlas**](https://github.com/r3d91ll/Todd_Atlas), which explores continuous memory systems that avoid dimensional compression between components.
+>
+> This implementation remains available as a reference for the Titans paper.
+
 A PyTorch implementation of the Titans architecture from the paper ["Titans: Learning to Memorize at Test Time"](https://arxiv.org/abs/2501.00663) by Google DeepMind.
 
 ## Overview
@@ -155,10 +161,10 @@ for chunk in text_chunks:
 This implementation is part of a research portfolio exploring memory-augmented architectures:
 
 - **Todd_MemRAG**: Industry-standard RAG with embedding-based retrieval
-- **Todd_Titans**: This repo - Titans paper implementation (reference)
-- **Todd_Atlas**: Atlas architecture with continuous memory (primary focus)
+- **Todd_Titans**: This repo - Titans paper implementation (archived)
+- **[Todd_Atlas](https://github.com/r3d91ll/Todd_Atlas)**: Atlas architecture with continuous memory (active development)
 
-Titans serves as foundational context for understanding the evolution toward continuous memory systems that avoid dimensional compression between components.
+Titans serves as foundational context for understanding the evolution toward continuous memory systems. Development has moved to Todd_Atlas, which addresses the dimensional compression limitations explored in this implementation.
 
 ## License
 
