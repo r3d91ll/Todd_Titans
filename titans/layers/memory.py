@@ -338,7 +338,7 @@ class NeuralMemory(nn.Module):
             output: (batch, seq_len, d_model) - memory-enhanced output
             new_state: Updated memory state (if return_memory_state=True)
         """
-        batch, seq_len, _ = x.shape
+        _, seq_len, _ = x.shape
 
         # Project to key, value, query spaces
         keys = self.key_proj(x)
@@ -445,6 +445,10 @@ class NeuralMemoryParallel(nn.Module):
     matrix multiplications efficiently."
 
     This version processes chunks in parallel for efficient training.
+
+    Note: Unlike NeuralMemory which uses deep MLPs, this implementation uses
+    a linear memory matrix M for efficiency. This allows expressing memory
+    updates as matrix multiplications rather than requiring autograd.
     """
 
     def __init__(
@@ -453,9 +457,6 @@ class NeuralMemoryParallel(nn.Module):
         d_key: int = 64,
         d_value: int = 64,
         chunk_size: int = 64,
-        num_memory_layers: int = 2,
-        memory_hidden_dim: Optional[int] = None,
-        activation: str = "silu",
         use_momentum: bool = True,
         use_forget_gate: bool = True,
         use_l2_norm_keys: bool = True,

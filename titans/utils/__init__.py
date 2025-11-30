@@ -177,7 +177,7 @@ def _sequential_scan(
     initial_state: torch.Tensor,
 ) -> torch.Tensor:
     """Sequential scan implementation."""
-    batch, seq_len, dim = gates.shape
+    _, seq_len, _ = gates.shape
     outputs = []
     h = initial_state
 
@@ -198,9 +198,8 @@ def _parallel_scan_impl(
 
     This implements the Blelloch scan for associative operations.
     """
-    batch, seq_len, dim = gates.shape
+    _, seq_len, _ = gates.shape
     device = gates.device
-    dtype = gates.dtype
 
     # Pad to power of 2 for efficiency
     log_n = math.ceil(math.log2(seq_len))

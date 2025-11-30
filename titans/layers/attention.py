@@ -191,9 +191,15 @@ class SlidingWindowAttention(nn.Module):
         q: Tensor,
         k: Tensor,
         v: Tensor,
-        attention_mask: Optional[Tensor],
+        attention_mask: Optional[Tensor] = None,  # noqa: ARG002
     ) -> Tensor:
-        """Flash attention with sliding window (requires flash-attn package)."""
+        """
+        Flash attention with sliding window (requires flash-attn package).
+
+        Note: Custom attention masks are not supported in the flash attention path.
+        The attention_mask parameter is accepted for API consistency but is not used.
+        Custom masks are only applied in the fallback _sliding_window_attention.
+        """
         try:
             from flash_attn import flash_attn_func
 
@@ -209,8 +215,10 @@ class SlidingWindowAttention(nn.Module):
             )
 
             return output.transpose(1, 2)
-        except ImportError:
-            raise ImportError("flash-attn not installed, falling back to standard attention")
+        except ImportError as err:
+            raise ImportError(
+                "flash-attn not installed, falling back to standard attention"
+            ) from err
 
 
 class PersistentMemoryAttention(nn.Module):
@@ -311,17 +319,16 @@ class PersistentMemoryAttention(nn.Module):
         scores = torch.matmul(q, k.transpose(-2, -1)) * self.scale
 
         # Create mask: queries can always attend to persistent tokens
+        # Vectorized implementation for efficiency
         mask = torch.zeros(seq_len, kv_len, device=x.device, dtype=torch.bool)
 
-        # Apply causal mask only to non-persistent positions
-        for i in range(seq_len):
-            # Can attend to all persistent tokens
-            # For context tokens, apply causal mask
-            context_start = self.num_persistent
-            for j in range(context_start, kv_len):
-                context_j = j - context_start
-                if context_j > i:  # Future position
-                    mask[i, j] = True
+        # Apply causal mask only to non-persistent (context) positions
+        # Persistent tokens (first num_persistent) are always attended
+        context_positions = torch.arange(seq_len, device=x.device).unsqueeze(1)
+        kv_context_positions = torch.arange(kv_len - self.num_persistent, device=x.device).unsqueeze(0)
+        # Future context positions should be masked
+        causal_mask = kv_context_positions > context_positions
+        mask[:, self.num_persistent:] = causal_mask
 
         scores = scores.masked_fill(mask.unsqueeze(0).unsqueeze(0), float("-inf"))
 

@@ -141,8 +141,6 @@ class TitansBlockMAC(nn.Module):
             output: (batch, seq_len, d_model)
             new_memory_state: Updated memory state
         """
-        batch, seq_len, _ = x.shape
-
         # Split into chunks for memory processing
         chunks, orig_len = chunk_sequence(x, self.chunk_size)
         num_chunks = chunks.shape[1]
@@ -230,7 +228,6 @@ class TitansBlockMAG(nn.Module):
             d_key=memory_config.d_key,
             d_value=memory_config.d_value,
             chunk_size=64,  # Internal chunking
-            num_memory_layers=memory_config.num_memory_layers,
             use_momentum=memory_config.use_momentum,
             use_forget_gate=memory_config.use_forget_gate,
         )
@@ -315,7 +312,6 @@ class TitansBlockMAL(nn.Module):
             d_key=memory_config.d_key,
             d_value=memory_config.d_value,
             chunk_size=64,
-            num_memory_layers=memory_config.num_memory_layers,
             use_momentum=memory_config.use_momentum,
             use_forget_gate=memory_config.use_forget_gate,
         )
@@ -435,7 +431,7 @@ class TitansMAC(nn.Module):
 
         new_memory_states = []
 
-        for block, mem_state in zip(self.blocks, memory_states):
+        for block, mem_state in zip(self.blocks, memory_states, strict=True):
             x, new_mem = block(x, mem_state, attention_mask)
             new_memory_states.append(new_mem)
 
@@ -490,7 +486,7 @@ class TitansMAG(nn.Module):
 
         new_memory_states = []
 
-        for block, mem_state in zip(self.blocks, memory_states):
+        for block, mem_state in zip(self.blocks, memory_states, strict=True):
             x, new_mem = block(x, mem_state, attention_mask)
             new_memory_states.append(new_mem)
 
@@ -545,7 +541,7 @@ class TitansMAL(nn.Module):
 
         new_memory_states = []
 
-        for block, mem_state in zip(self.blocks, memory_states):
+        for block, mem_state in zip(self.blocks, memory_states, strict=True):
             x, new_mem = block(x, mem_state, attention_mask)
             new_memory_states.append(new_mem)
 

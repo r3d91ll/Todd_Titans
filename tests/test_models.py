@@ -234,7 +234,7 @@ class TestTitansBlockVariants:
         )
 
         x = torch.randn(2, 32, d_model)
-        output, memory_state = block(x)
+        output, _memory_state = block(x)
 
         assert output.shape == x.shape
 
@@ -253,7 +253,7 @@ class TestTitansBlockVariants:
         )
 
         x = torch.randn(2, 32, d_model)
-        output, memory_state = block(x)
+        output, _memory_state = block(x)
 
         assert output.shape == x.shape
 
@@ -272,6 +272,6 @@ class TestTitansBlockVariants:
         )
 
         x = torch.randn(2, 32, d_model)
-        output, memory_state = block(x)
+        output, _memory_state = block(x)
 
         assert output.shape == x.shape
